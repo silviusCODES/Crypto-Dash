@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/styles.css">
+    <title>Crypto Dashboard</title>
+</head>
+<body>
+    
+    <%- include('partials/header', { title: 'Home', headerTitle: 'Crypto Dashboard' }) %>
+
+    <main class="container mx-auto mt-4 fadeIn">
+
+        <!-- Display Global Market Insights -->
+        <div id="global-market-content" class="hidden">
+            <div class="bg-grey-800 p-4 shadow rounded mb-4 slideIn">
+                <h3 class="bg-black text-xl font-semibold section-title">Global Market Insights</h3>
+                <p>Total Market Cap: <strong id="marketCap">$<%= globalData.total_market_cap?.usd ? globalData.total_market_cap.usd.toLocaleString() : 'N/A' %></strong></p>
+                <p>Total 24h Volume: <strong id="volume">$<%= globalData.total_volume?.usd ? globalData.total_volume.usd.toLocaleString() : 'N/A' %></strong></p>
+                <p>Bitcoin Dominance: <strong id="btcDominance"><%= globalData.market_cap_percentage?.btc ? globalData.market_cap_percentage.btc.toFixed(2) : 'N/A' %>%</strong></p>
+            </div>
+        </div>
+        
+        <h2 class="text-center text-2xl font-bold section-title slideIn mt-10">Top Cryptocurrencies</h2>
+        <div class="row">
+            <% cryptoData.forEach(coin => { %>
+                <div class="col-md-4 mb-4">
+                    <div class="card">
+                        <div class="card-body text-center">
+                            <img src="<%= coin.image %>" alt="<%= coin.name %> logo" class="crypto-logo mb-2" width="50">
+                            <h5 class="card-title">
+                                <a href="/coin/<%= coin.id %>" class="text-decoration-none text-dark text-xl font-bold">
+                                    <%= coin.name %> (<%= coin.symbol.toUpperCase() %>)
+                                </a>
+                            </h5>
+                            <p class="card-text">Price: <strong>$<%= coin.current_price.toFixed(2) %></strong></p>
+                            <p class="card-text">Market Cap: <strong>$<%= coin.market_cap.toLocaleString() %></strong></p>
+                            <p class="card-text">24h Change: 
+                                <span class="<%= coin.price_change_percentage_24h >= 0 ? 'text-success' : 'text-danger' %>">
+                                    <%= coin.price_change_percentage_24h.toFixed(2) %>%
+                                    <i class="<%= coin.price_change_percentage_24h >= 0 ? 'fas fa-arrow-up' : 'fas fa-arrow-down' %>"></i>
+                                </span>
+                            </p>
+                            <button class="btn btn-outline-secondary favorite-button" data-id="<%= coin.id %>">
+                                <i class="fas fa-star"></i> Favorite
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            <% }) %>
+        </div>
+    </main>
+
+    <!-- Watchlist Container -->
+    <div id="watchlist-container">
+        <div class="relative p-4 shadow rounded mb-4">
+          <h3 class="mt-5">Your Watchlist</h3>
+          <div id="watchlist" class="row">
+            <% cryptoData.forEach(coin => { %>
+              <div class="col-md-4 mb-4">
+                <div class="card">
+                  <img src="<%= coin.image %>" alt="<%= coin.name %> logo" />
+                  <p class="card-title"><%= coin.name %></p>
+                </div>
+              </div>
+            <% }) %>
+          </div>
+        </div>
+    </div>      
+
+    <!-- Bootstrap and FontAwesome for icons  -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script src="https://kit.fontawesome.com/a076d05399.js"></script>
+
+
+    <!-- Watchlist Toggle Script -->
+    <script>
+    document.getElementById('toggle-watchlist').addEventListener('click', function() {
+        console.log("Watchlist toggled!");
+        const watchlist = document.getElementById('watchlist-container');
+        watchlist.classList.toggle('show');
+    });
+
+    window.addEventListener('resize', function() {
+        const watchlist = document.getElementById('watchlist-container');
+        const cards = watchlist.querySelectorAll('.card');
+        if (watchlist.classList.contains('show')) {
+          if (cards.length > 3) {
+            watchlist.style.height = '100%';
+            const cardHeight = Math.floor((window.innerHeight - 20) / cards.length);
+            cards.forEach(card => card.style.height = `${cardHeight}px`);
+          } else {
+            watchlist.style.height = 'auto';
+            cards.forEach(card => card.style.height = 'auto');
+          }
+        }
+    });
+    
+    </script>
+
+
+    <script>
+        document.getElementById('toggle-global-market').addEventListener('click', function() {
+            console.log("Toggle clicked!"); // For debugging
+            const content = document.getElementById('global-market-content');
+            content.classList.toggle('show');
+        
+            setTimeout(() => {
+                content.classList.toggle('visible');
+            }, 10);
+        });
+      </script>
+
+    <!-- Your Watchlist Script -->
+    <script>
+        
+        // Make the EJS data available as a global variable
+        window.cryptoData = JSON.parse('<%- JSON.stringify(cryptoData) %>');
+
+        // Function to toggle favorites
+        function toggleFavorite(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            
+            const button = event.currentTarget;
+            const coinId = button.dataset.id;
+            
+            let favorites = [];
+            try {
+                favorites = JSON.parse(sessionStorage.getItem('favorites')) || [];
+            } catch (e) {
+                console.error('Error parsing favorites:', e);
+                favorites = [];
+            }
+
+            const index = favorites.indexOf(coinId);
+            if (index > -1) {
+                favorites.splice(index, 1);
+            } else {
+                favorites.push(coinId);
+            }
+
+            try {
+                sessionStorage.setItem('favorites', JSON.stringify(favorites));
+                updateWatchlist();
+                updateAllFavoriteButtons();
+            } catch (e) {
+                console.error('Error saving favorites:', e);
+            }
+        }
+
+        // Function to update a single favorite button
+        function updateFavoriteButton(button, isFavorited) {
+            if (isFavorited) {
+                button.classList.add('btn-warning');
+                button.innerHTML = '<i class="fas fa-star"></i> Unfavorite';
+            } else {
+                button.classList.remove('btn-warning');
+                button.innerHTML = '<i class="fas fa-star"></i> Favorite';
+            }
+        }
+
+        // Function to update all favorite buttons
+        function updateAllFavoriteButtons() {
+            let favorites = [];
+            try {
+                favorites = JSON.parse(sessionStorage.getItem('favorites')) || [];
+            } catch (e) {
+                console.error('Error parsing favorites for buttons:', e);
+                favorites = [];
+            }
+
+            document.querySelectorAll('.favorite-button').forEach(button => {
+                const coinId = button.dataset.id;
+                updateFavoriteButton(button, favorites.includes(coinId));
+            });
+        }
+
+        // Function to create a coin card
+        function createCoinCard(coin, isFavorited) {
+            return `
+                <div class="col-md-4 mb-4">
+                    <div class="card">
+                        <div class="card-body text-center">
+                            <img src="${coin.image}" alt="${coin.name} logo" class="crypto-logo mb-2" width="50">
+                            <h5 class="card-title">
+                                <a href="/coin/${coin.id}" class="text-decoration-none text-dark">
+                                    ${coin.name} (${coin.symbol.toUpperCase()})
+                                </a>
+                            </h5>
+                            <p class="card-text">Price: <strong>$${coin.current_price.toFixed(2)}</strong></p>
+                            <p class="card-text">Market Cap: <strong>$${coin.market_cap.toLocaleString()}</strong></p>
+                            <p class="card-text">24h Change: 
+                                <span class="${coin.price_change_percentage_24h >= 0 ? 'text-success' : 'text-danger'}">
+                                    ${coin.price_change_percentage_24h.toFixed(2)}%
+                                    <i class="${coin.price_change_percentage_24h >= 0 ? 'fas fa-arrow-up' : 'fas fa-arrow-down'}"></i>
+                                </span>
+                            </p>
+                            <button class="btn ${isFavorited ? 'btn-warning' : 'btn-outline-secondary'} favorite-button" data-id="${coin.id}">
+                                <i class="fas fa-star"></i> ${isFavorited ? 'Unfavorite' : 'Favorite'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Function to update the watchlist
+        function updateWatchlist() {
+            const watchlistContainer = document.getElementById('watchlist');
+            if (!watchlistContainer) return;
+
+            let favorites = [];
+            try {
+                favorites = JSON.parse(sessionStorage.getItem('favorites')) || [];
+            } catch (e) {
+                console.error('Error parsing favorites for watchlist:', e);
+                favorites = [];
+            }
+
+            watchlistContainer.innerHTML = '';
+
+            favorites.forEach(coinId => {
+                const coin = window.cryptoData.find(c => c.id === coinId);
+                if (coin) {
+                    watchlistContainer.innerHTML += createCoinCard(coin, true);
+                }
+            });
+
+            // Reattach event listeners
+            attachEventListeners();
+        }
+
+        // Function to attach event listeners
+        function attachEventListeners() {
+            document.querySelectorAll('.favorite-button').forEach(button => {
+                // Remove existing listeners to prevent duplicates
+                button.removeEventListener('click', toggleFavorite);
+                // Add new listener
+                button.addEventListener('click', toggleFavorite);
+            });
+        }
+
+        // Initialize everything when the DOM is loaded
+        function initialize() {
+            updateWatchlist();
+            updateAllFavoriteButtons();
+            attachEventListeners();
+        }
+
+        // Add the DOMContentLoaded listener
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initialize);
+        } else {
+            initialize(); // If DOMContentLoaded has already fired
+        }
+    </script>
+
+
+    <%- include('partials/footer') %>
+    
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+
+        socket.on('globalData', (globalData) => {
+            document.getElementById('marketCap').textContent = `$${globalData.total_market_cap?.usd ? globalData.total_market_cap.usd.toLocaleString() : 'N/A'}`;
+            document.getElementById('volume').textContent = `$${globalData.total_volume?.usd ? globalData.total_volume.usd.toLocaleString() : 'N/A'}`;
+            document.getElementById('btcDominance').textContent = `${globalData.market_cap_percentage?.btc ? globalData.market_cap_percentage.btc.toFixed(2) : 'N/A'}%`;
+        });
+    </script>
+
+</body>
+</html>

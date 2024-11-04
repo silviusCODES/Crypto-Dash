@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= coinDetails.name %></title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    
+    <%- include('partials/header', { title: coinDetails.name, headerTitle: coinDetails.name + ' Details' }) %>
+
+    <main class="container mt-4">
+        <div class="row">
+            <div class="col-md-6">
+                <img src="<%= coinDetails.image.large %>" alt="<%= coinDetails.name %> logo" class="img-fluid mb-3">
+                <h2>Current Price: $<%= coinDetails.market_data.current_price.usd.toFixed(2) %></h2>
+                <h4>Market Cap: $<%= coinDetails.market_data.market_cap.usd.toLocaleString() %></h4>
+                <h4>Trading Volume: $<%= coinDetails.market_data.total_volume.usd.toLocaleString() %></h4>
+                <h4>Price Change (24h): 
+                    <span class="<%= coinDetails.market_data.price_change_percentage_24h >= 0 ? 'text-success' : 'text-danger' %>">
+                        <%= coinDetails.market_data.price_change_percentage_24h.toFixed(2) %>%
+                        <i class="<%= coinDetails.market_data.price_change_percentage_24h >= 0 ? 'fas fa-arrow-up' : 'fas fa-arrow-down' %>"></i>
+                    </span>
+                </h4>
+            </div>
+            <div class="col-md-6">
+                <h4>Community Data</h4>
+                <p>Reddit Subscribers: <%= coinDetails.community_data.reddit_subscribers.toLocaleString() %></p>
+                <p>Twitter Followers: <%= coinDetails.community_data.twitter_followers.toLocaleString() %></p>
+                <h4>Developer Activity</h4>
+                <p>Forks: <%= coinDetails.developer_data.forks.toLocaleString() %></p>
+                <p>Stars: <%= coinDetails.developer_data.stars.toLocaleString() %></p>
+                <p>Subscribers: <%= coinDetails.developer_data.subscribers.toLocaleString() %></p>
+            </div>
+        </div>
+
+        <!-- Optionally, you could implement a chart to visualize price history here -->
+        <h3 class="mt-4">Price History</h3>
+        <canvas id="priceHistoryChart" width="400" height="200"></canvas>
+
+        <script>
+            const ctx = document.getElementById('priceHistoryChart').getContext('2d');
+            const chartData = {
+                labels: JSON.parse('<%- JSON.stringify(labels) %>'), // Properly parse the EJS data
+                prices: JSON.parse('<%- JSON.stringify(prices) %>') // Properly parse the EJS data
+            };
+
+            const priceHistoryChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: chartData.labels,
+                    datasets: [{
+                        label: '<%= coinDetails.name %> Price (USD)',
+                        data: chartData.prices,
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        borderWidth: 2,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Date'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Price (USD)'
+                            },
+                            beginAtZero: false
+                        }
+                    }
+                }
+            });
+        </script>
+         
+    </main>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script src="https://kit.fontawesome.com/a076d05399.js"></script>
+    <%- include('partials/footer') %>
+</body>
+</html>
